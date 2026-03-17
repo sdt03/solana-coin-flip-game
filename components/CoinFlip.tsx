@@ -53,6 +53,8 @@ export function CoinFlip(){
   const handleBet = async (amount: number) => {
     setIsLoading(true);
     if (!publicKey) return;
+    console.log("RPC: ", process.env.NEXT_PUBLIC_SOLANA_RPC_URL);
+    console.log("WS: ", process.env.NEXT_PUBLIC_SOLANA_WS_URL);
 
     const betAmount = Number(amount) * LAMPORTS_PER_SOL;
     console.log(betAmount);
