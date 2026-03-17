@@ -107,6 +107,43 @@ export async function POST(request: NextRequest) {
 }
 }
 
+export async function GET(_request: NextRequest) {
+  try{
+    const games = await prisma.game.findMany({
+      include:{
+        user:{
+          select:{
+            walletPublicKey: true,
+          }
+        },
+        transactions:{
+          select:{
+            transactionType: true,
+            amount: true,
+          }
+        }
+      },
+      orderBy:{
+        createdAt: "desc",
+      },
+      take: 10,
+      });
+      const safeGames = games.map((g) => ({
+        ...g,
+        betAmount: g.betAmount.toString(),
+        transactions: g.transactions.map((t) => ({
+          ...t,
+          amount: t.amount.toString(),
+        })),
+      }));
+      return NextResponse.json(safeGames);
+    } 
+  catch (error) {
+    console.error(error);
+    return NextResponse.json({ message: (error as Error).message }, { status: 500 });
+  }
+}
+
 const calculateBaseAmount = (walletDetails: ParsedTransactionWithMeta) => {
   const preBalance = walletDetails?.meta?.preBalances[0];
   const postBalance = walletDetails?.meta?.postBalances[0];
@@ -116,3 +153,4 @@ const calculateBaseAmount = (walletDetails: ParsedTransactionWithMeta) => {
 const platformKeyPair = Keypair.fromSecretKey(
   bs58.decode(process.env.PRIVATE_KEY!)
 );
+

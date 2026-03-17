@@ -15,11 +15,31 @@ import { useUser } from "@/hooks/useUser.hook";
 import { Connection, LAMPORTS_PER_SOL, PublicKey, SystemProgram, Transaction } from "@solana/web3.js";
 import axios from "axios";
 import { toast } from "sonner";
-import { Card, CardContent, CardFooter } from "./ui/card";
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "./ui/card";
+import { useRecentGames } from "@/hooks/useTransaction.hook";
+import { SkeletonLoaderLeaderboard } from "./SkeletonLoaderLeaderboard";
 
 const platformWallet = new PublicKey(process.env.NEXT_PUBLIC_SOLANA_PROGRAM_ID!);
 
+interface Game {
+  id: number;
+  user: {
+    walletPublicKey: string;
+  }
+  transactions: {
+    transactionType: string;
+  }
+  betAmount: number;
+  choice: string;
+  result: string;
+}
+
 export function CoinFlip(){
+  const { data: games, isLoading: isLoadingGames } = useRecentGames();
+
+  const truncateKey = (key: string) =>
+    key.length > 10 ? `${key.slice(0, 4)}...${key.slice(-4)}` : key;
+
   const [choice, setChoice] = useState<string>("heads");
   const [amount, setAmount] = useState<number>(0.01);
   const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -92,7 +112,7 @@ export function CoinFlip(){
     "border-white/20 bg-white/5 text-white hover:bg-white/10";
 
   return (
-    <div className="w-full -translate-y-24 px-6 text-white font-outfit">
+    <div className="w-full px-6 pt-12 pb-20 text-white font-outfit">
       <Card className="mx-auto w-full max-w-[380px] bg-zinc-950/80 text-white ring-1 ring-white/10 backdrop-blur">
         <CardContent className="px-6">
         <h1 className="text-center text-xl font-bold tracking-widest">BET ON</h1>
@@ -212,6 +232,59 @@ export function CoinFlip(){
           <WalletDisconnectButton />
         </CardFooter>
       </Card>
+
+      <div className="w-full mt-10 overflow-y-auto">
+        <Card className="mx-auto w-full max-w-[700px] min-h-[400px] bg-zinc-950/80 border border-white/10 text-white ring-1 ring-white/10 backdrop-blur">
+          <CardHeader>
+            <CardTitle className="text-center text-xl font-bold tracking-widest">Recent Games</CardTitle>
+          </CardHeader>
+          <CardContent className="flex flex-col gap-3">
+            <div className="grid grid-cols-4 gap-3 rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-md font-semibold tracking-widest text-white/70">
+              <div>Wallet Public Key</div>
+              <div className="text-right">Amount (SOL)</div>
+              <div className="text-center">Choice</div>
+              <div className="text-right">Result</div>
+            </div>
+
+            {isLoadingGames ? (
+              <SkeletonLoaderLeaderboard />
+            ) : (
+              <div className="max-h-[300px] w-full overflow-y-auto rounded-xl [scrollbar-gutter:stable] [&::-webkit-scrollbar]:w-0.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-white/20 [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-white/30">
+                <div className="flex flex-col gap-2 pr-3">
+                  {games.map((game: Game) => (
+                    <div
+                      key={game.id}
+                      className="grid grid-cols-4 items-center gap-3 rounded-xl border border-white/10 bg-white/5 px-4 py-3"
+                    >
+                      <div className="min-w-0 truncate font-mono text-md text-white/85">
+                        {truncateKey(game.user.walletPublicKey)}
+                      </div>
+
+                      <div className="text-center font-mono text-md text-white/85">
+                        {(Number(game.betAmount) / LAMPORTS_PER_SOL).toFixed(3)}
+                      </div>
+
+                      <div className="text-center text-md uppercase tracking-wider text-white/80">
+                        {game.choice}
+                      </div>
+
+                      <span
+                        className={
+                          game.result === "WIN"
+                            ? "ml-auto w-fit rounded-full bg-amber-400 px-2 py-1 text-md font-semibold text-black"
+                            : "ml-auto w-fit rounded-full bg-white/10 px-2 py-1 text-md font-semibold text-white/80"
+                        }
+                      >
+                        {game.result}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
     </div>
   )
 }
