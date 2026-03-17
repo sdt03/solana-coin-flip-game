@@ -40,6 +40,17 @@ export function CoinFlip(){
   const truncateKey = (key: string) =>
     key.length > 10 ? `${key.slice(0, 4)}...${key.slice(-4)}` : key;
 
+  const sanitizeRpcUrl = (raw: string | undefined) => {
+    const v = (raw ?? "").trim();
+    if (!v) return v;
+    // If a URL accidentally got duplicated, keep the last https:// segment.
+    if (v.includes("https://")) {
+      const parts = v.split("https://").filter(Boolean);
+      return `https://${parts[parts.length - 1]}`;
+    }
+    return v;
+  };
+
   const [choice, setChoice] = useState<string>("heads");
   const [amount, setAmount] = useState<number>(0.01);
   const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -53,8 +64,6 @@ export function CoinFlip(){
   const handleBet = async (amount: number) => {
     setIsLoading(true);
     if (!publicKey) return;
-    console.log("RPC: ", process.env.NEXT_PUBLIC_SOLANA_RPC_URL);
-    console.log("WS: ", process.env.NEXT_PUBLIC_SOLANA_WS_URL);
 
     const betAmount = Number(amount) * LAMPORTS_PER_SOL;
     console.log(betAmount);
@@ -64,7 +73,7 @@ export function CoinFlip(){
       lamports: betAmount,
     });
     const tx = new Transaction().add(instruction);
-    const connection = new Connection(process.env.NEXT_PUBLIC_SOLANA_RPC_URL!, {
+    const connection = new Connection(sanitizeRpcUrl(process.env.NEXT_PUBLIC_SOLANA_RPC_URL), {
       commitment: "confirmed",
       wsEndpoint: process.env.NEXT_PUBLIC_SOLANA_WS_URL!,
     });
