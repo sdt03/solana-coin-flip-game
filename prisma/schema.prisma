@@ -1,0 +1,65 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client"
+  output   = "../lib/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum GameResult {
+  WIN
+  LOSS
+}
+
+enum GameChoice {
+  HEADS
+  TAILS
+}
+
+enum TransactionType {
+  PAYOUT
+  BET
+}
+
+model User {
+  id              Int      @id @default(autoincrement())
+  walletPublicKey String   @unique
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  games        Game[]
+  transactions Transaction[]
+}
+
+model Game {
+  id          Int        @id @default(autoincrement())
+  userId      Int
+  user        User       @relation(fields: [userId], references: [id])
+  betAmount   BigInt // IN LAMPORTS
+  txSignature String     @unique
+  choice      GameChoice
+  result      GameResult
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  transactions Transaction[]
+}
+
+model Transaction {
+  id              Int             @id @default(autoincrement())
+  userId          Int
+  user            User            @relation(fields: [userId], references: [id])
+  gameId          Int
+  game            Game            @relation(fields: [gameId], references: [id])
+  txSignature     String          @unique
+  transactionType TransactionType
+  amount          BigInt // IN LAMPORTS
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+}
